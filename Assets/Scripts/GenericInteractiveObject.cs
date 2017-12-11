@@ -4,11 +4,14 @@ using UnityEngine;
 
 public class GenericInteractiveObject : MonoBehaviour, IActivatable {
 
+    [SerializeField]
+    string nametext;
+
     public string NameText
     {
         get
         {
-            throw new System.NotImplementedException();
+            return nametext;
         }
     }
 
