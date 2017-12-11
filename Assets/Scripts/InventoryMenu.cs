@@ -1,61 +1,127 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityStandardAssets.Characters.FirstPerson;
 
-public class InventoryMenu : MonoBehaviour {
+public class InventoryMenu : MonoBehaviour 
+{
     [SerializeField]
     private GameObject inventoryMenuPanel;
 
     [SerializeField]
     private FirstPersonController firstPersonController;
 
-    private bool isMenuShowing
+    [SerializeField]
+    private GameObject menuItemPrefab;
+
+    [SerializeField]
+    Transform inventoryItemListPanel;
+
+    [SerializeField]
+    Text descriptionAreaText;
+
+    private List<GameObject> menuItems;
+    private string defaultDescriptionText;
+
+    public List<InventoryObject> PlayerInventory { get; private set; }
+
+    bool IsVisible
     {
         get { return inventoryMenuPanel.activeSelf; }
     }
 
-    public List<InventoryObject> PlayerInventory { get; private set; }
-
-    private void Awake()
+    public void UpdateDescriptionAreaText(string descriptionText)
     {
-        PlayerInventory = new List<InventoryObject>();
+        descriptionAreaText.text = descriptionText;
     }
 
-    // Use this for initialization
-    void Start ()
+    // Use Awake for initialization
+    // Have to use Awake here because it happens before Start.
+    // Since other objects need to read PlayerInventory in Start when they initialize,
+    // If this hasn't happened yet, inventoryMenu will be null when they try to read!
+    private void Awake()
     {
+        defaultDescriptionText = descriptionAreaText.text;
+        PlayerInventory = new List<InventoryObject>();
+        menuItems = new List<GameObject>();
         HideMenu();
-	}
-    private void Update()
-    {
-        HandleInput();
         UpdateCursor();
+    }
+    // Update is called once per frame
+    void Update () 
+	{
+        HandleInput();
+
+        // It seems if you don't do this every frame, the cursor is not locked properly...
+        UpdateCursor();
+    }
+
+    private void HandleInput()
+    {
+        if (Input.GetButtonDown("Cancel"))
+        {
+            if (IsVisible)
+            {
+                HideMenu();
+            }
+            else
+            {
+                ShowMenu();
+            }            
+            UpdateFirstPersonController();
+        }
+    }
+
+    private void ShowMenu()
+    {
+        UpdateDescriptionAreaText(defaultDescriptionText);
+        GenerateMenuItems();
+        inventoryMenuPanel.SetActive(true);
+    }
+
+    private void GenerateMenuItems()
+    {
+        foreach (InventoryObject item in PlayerInventory)
+        {
+            GameObject newMenuItem = Instantiate(menuItemPrefab, inventoryItemListPanel) as GameObject;
+
+            // Set the toggle group so only one item at a time can be selected
+            newMenuItem.GetComponent<Toggle>().group = inventoryItemListPanel.GetComponent<ToggleGroup>();
+
+            // Set the toggle label name text (it's on a child gameobject of the toggle)
+            newMenuItem.GetComponentInChildren<Text>().text = item.NameText;
+
+            // Tell the menu item what object it is representing
+            newMenuItem.GetComponent<InventoryMenuItem>().InventoryObjectRepresented = item;
+
+            menuItems.Add(newMenuItem);
+        }
+    }
+
+    private void UpdateFirstPersonController()
+    {
+        firstPersonController.enabled = !IsVisible;
     }
 
     private void HideMenu()
     {
         inventoryMenuPanel.SetActive(false);
-        firstPersonController.enabled = true;
+        DestroyInventoryMenuItems();
     }
-    private void ShowMenu()
+
+    private void DestroyInventoryMenuItems()
     {
-        inventoryMenuPanel.SetActive(true);
-        firstPersonController.enabled = false;
-    }
-    private void HandleInput()
-    {
-        if (Input.GetButtonDown("Cancel"))
+        foreach (var item in menuItems)
         {
-            if (isMenuShowing)
-                HideMenu();
-            else
-                ShowMenu();
+            Destroy(item);
         }
     }
+
     private void UpdateCursor()
     {
-        if (isMenuShowing)
+        if (IsVisible)
         {
             Cursor.visible = true;
             Cursor.lockState = CursorLockMode.None;

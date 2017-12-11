@@ -1,69 +1,57 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class ActivateLookedatObjects : MonoBehaviour {
+public class ActivateLookedAtObjects : MonoBehaviour 
+{
     [SerializeField]
-    private float maxActivateDistance = 10;
+    private float maxActivateDistance = 6.0f;
+
     [SerializeField]
     private Text lookedAtObjectText;
 
     private IActivatable objectLookedAt;
-
-	// Use this for initialization
-	void Start ()
-    {
-		
-	}
 	
-	// Update is called once per frame
-	void Update ()
+	void FixedUpdate ()
     {
+        Debug.DrawRay(transform.position, transform.forward * maxActivateDistance);
+
         UpdateObjectLookedAt();
         UpdateLookedAtObjectText();
-        HandleInput();
-	}
-
-    private void UpdateObjectLookedAt()
-    {
-        //make raycast visible in scene view
-        Debug.DrawRay(transform.position, transform.forward * maxActivateDistance, Color.blue);
-        //use this RaycastHit variable to temporarily store data on the object hit
-        RaycastHit raycastHit;
-
-        //if a raycast hits something
-        if (Physics.Raycast(transform.position, transform.forward, out raycastHit, maxActivateDistance))
-        {
-            Debug.Log("Raycast hit " + raycastHit.transform.name);
-
-            objectLookedAt = raycastHit.transform.GetComponent<IActivatable>();
-        }
-        else
-        {
-            objectLookedAt = null;
-        }
+        ActivateLookedAtObject();
     }
 
-    private void HandleInput()
+    private void ActivateLookedAtObject()
     {
-        if (objectLookedAt != null && Input.GetButtonDown("Activate"))
+        if (objectLookedAt != null)
         {
-            objectLookedAt.DoActivate();
+            if (Input.GetButtonDown("Fire1"))
+            {
+                objectLookedAt.DoActivate();
+            }
         }
     }
 
     private void UpdateLookedAtObjectText()
     {
-        if (objectLookedAt == null)
-        {
-            lookedAtObjectText.text = string.Empty;
-        }
-        else
-        {
+        if (objectLookedAt != null)
             lookedAtObjectText.text = objectLookedAt.NameText;
+        else
+            lookedAtObjectText.text = "";
+    }
+
+    private void UpdateObjectLookedAt()
+    {
+        RaycastHit hit;
+        objectLookedAt = null;
+
+        if (Physics.Raycast(transform.position, transform.forward, out hit, maxActivateDistance))
+        {
+            Debug.Log("Hit: " + hit.transform.name);
+
+            objectLookedAt = hit.transform.GetComponent<IActivatable>();
         }
-        //functionally identical alternate syntax for reference:
-        //lookedAtObjectText.text = objectLookedAt == null ? string.Empty : objectLookedAt.NameText
     }
 }
